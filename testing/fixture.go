@@ -309,6 +309,18 @@ func NewObjectTracker(scheme ObjectScheme, decoder runtime.Decoder) ObjectTracke
 	}
 }
 
+func (t *tracker) GetNumObjectsWatchers() (int, int) {
+	return len(t.objects), len(t.watchers)
+}
+
+func (t *tracker) ClearObjects() {
+	t.objects = nil
+}
+
+func (t *tracker) ClearWatchers() {
+	t.watchers = nil
+}
+
 func (t *tracker) List(gvr schema.GroupVersionResource, gvk schema.GroupVersionKind, ns string, opts ...metav1.ListOptions) (runtime.Object, error) {
 	_, err := assertOptionalSingleArgument(opts)
 	if err != nil {
