@@ -77,6 +77,15 @@ type ObjectTracker interface {
 	// Watch watches objects from the tracker. Watch returns a channel
 	// which will push added / modified / deleted object.
 	Watch(gvr schema.GroupVersionResource, ns string, opts ...metav1.ListOptions) (watch.Interface, error)
+
+	// GetNumObjectsWatchers returns the numbers of objects and watchers
+	GetNumObjectsWatchers() (int, int)
+
+	// ClearObjects clears the objects
+	ClearObjects()
+
+	// ClearWatchers clears the watchers
+	ClearWatchers()
 }
 
 // ObjectScheme abstracts the implementation of common operations on objects.
