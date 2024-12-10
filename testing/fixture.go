@@ -66,6 +66,15 @@ type ObjectTracker interface {
 	// Watch watches objects from the tracker. Watch returns a channel
 	// which will push added / modified / deleted object.
 	Watch(gvr schema.GroupVersionResource, ns string) (watch.Interface, error)
+
+	// GetNumObjectsWatchers returns the numbers of objects and watchers
+	GetNumObjectsWatchers() (int, int)
+
+	// ClearObjects clears the objects
+	ClearObjects()
+
+	// ClearWatchers clears the watchers
+	ClearWatchers()
 }
 
 // ObjectScheme abstracts the implementation of common operations on objects.
@@ -229,6 +238,18 @@ func NewObjectTracker(scheme ObjectScheme, decoder runtime.Decoder) ObjectTracke
 		objects:  make(map[schema.GroupVersionResource]map[types.NamespacedName]runtime.Object),
 		watchers: make(map[schema.GroupVersionResource]map[string][]*watch.RaceFreeFakeWatcher),
 	}
+}
+
+func (t *tracker) GetNumObjectsWatchers() (int, int) {
+	return len(t.objects), len(t.watchers)
+}
+
+func (t *tracker) ClearObjects() {
+	t.objects = nil
+}
+
+func (t *tracker) ClearWatchers() {
+	t.watchers = nil
 }
 
 func (t *tracker) List(gvr schema.GroupVersionResource, gvk schema.GroupVersionKind, ns string) (runtime.Object, error) {
