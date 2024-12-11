@@ -491,6 +491,9 @@ func (t *tracker) Delete(gvr schema.GroupVersionResource, ns, name string) error
 	for _, w := range t.getWatches(gvr, ns) {
 		w.Delete(obj.DeepCopyObject())
 	}
+	for _, w := range t.getWatches(gvr, metav1.NamespaceAll) {
+		w.Delete(obj.DeepCopyObject())
+	}
 	return nil
 }
 
