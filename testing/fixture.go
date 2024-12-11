@@ -68,7 +68,7 @@ type ObjectTracker interface {
 	Watch(gvr schema.GroupVersionResource, ns string) (watch.Interface, error)
 
 	// GetNumObjectsWatchers returns the numbers of objects and watchers
-	GetNumObjectsWatchers() (int, int)
+	GetNumObjectsWatchers() (int, int, int)
 
 	// ClearObjects clears the objects
 	ClearObjects()
@@ -240,8 +240,23 @@ func NewObjectTracker(scheme ObjectScheme, decoder runtime.Decoder) ObjectTracke
 	}
 }
 
-func (t *tracker) GetNumObjectsWatchers() (int, int) {
-	return len(t.objects), len(t.watchers)
+// GetNumObjectsWatchers returns numUnnamedspaceObjects, numObjects, numWatchers
+func (t *tracker) GetNumObjectsWatchers() (int, int, int) {
+	numObjects := 0
+	numUnnamedspaceObjects := 0
+	for _, objectgvr := range t.objects {
+		for ns, _ := range objectgvr {
+			if ns.Namespace == metav1.NamespaceAll {
+				numUnnamedspaceObjects = numUnnamedspaceObjects + 1
+			}
+		}
+		numObjects = numObjects + len(objectgvr)
+	}
+	numWatchers := 0
+	for _, watchergvr := range t.watchers {
+		numWatchers = numWatchers + len(watchergvr)
+	}
+	return numUnnamedspaceObjects, numObjects, numWatchers
 }
 
 func (t *tracker) ClearObjects() {
@@ -489,9 +504,6 @@ func (t *tracker) Delete(gvr schema.GroupVersionResource, ns, name string) error
 
 	delete(objs, namespacedName)
 	for _, w := range t.getWatches(gvr, ns) {
-		w.Delete(obj.DeepCopyObject())
-	}
-	for _, w := range t.getWatches(gvr, metav1.NamespaceAll) {
 		w.Delete(obj.DeepCopyObject())
 	}
 	return nil
