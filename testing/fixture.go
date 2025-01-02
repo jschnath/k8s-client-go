@@ -18,6 +18,7 @@ package testing
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"sort"
 	"strings"
@@ -68,7 +69,7 @@ type ObjectTracker interface {
 	Watch(gvr schema.GroupVersionResource, ns string) (watch.Interface, error)
 
 	// GetNumObjectsWatchers returns the numbers of objects and watchers
-	GetNumObjectsWatchers() (int, int, int)
+	GetNumObjectsWatchers() (int, int, int, int)
 
 	// ClearObjects clears the objects
 	ClearObjects()
@@ -240,8 +241,8 @@ func NewObjectTracker(scheme ObjectScheme, decoder runtime.Decoder) ObjectTracke
 	}
 }
 
-// GetNumObjectsWatchers returns numUnnamedspaceObjects, numObjects, numWatchers
-func (t *tracker) GetNumObjectsWatchers() (int, int, int) {
+// GetNumObjectsWatchers returns numUnnamedspaceObjects, numObjects, numWatchers, numObjectsInWatchers
+func (t *tracker) GetNumObjectsWatchers() (int, int, int, int) {
 	numObjects := 0
 	numUnnamedspaceObjects := 0
 	for _, objectgvr := range t.objects {
@@ -252,11 +253,15 @@ func (t *tracker) GetNumObjectsWatchers() (int, int, int) {
 		}
 		numObjects = numObjects + len(objectgvr)
 	}
+	numWatchersGvrs := 0
 	numWatchers := 0
 	for _, watchergvr := range t.watchers {
-		numWatchers = numWatchers + len(watchergvr)
+		numWatchersGvrs = numWatchersGvrs + len(watchergvr)
+		for _, watcherlists := range watchergvr {
+			numWatchers = numWatchers + len(watcherlists)
+		}
 	}
-	return numUnnamedspaceObjects, numObjects, numWatchers
+	return numUnnamedspaceObjects, numObjects, numWatchersGvrs, numWatchers
 }
 
 func (t *tracker) ClearObjects() {
@@ -447,7 +452,9 @@ func (t *tracker) add(gvr schema.GroupVersionResource, obj runtime.Object, ns st
 		if replaceExisting {
 			for _, w := range t.getWatches(gvr, ns) {
 				// To avoid the object from being accidentally modified by watcher
-				w.Modify(obj.DeepCopyObject())
+				modifyObj := obj.DeepCopyObject()
+				log.Default().Printf("Modifiying object at address %s in tracker", &modifyObj)
+				w.Modify(modifyObj)
 			}
 			t.objects[gvr][namespacedName] = obj
 			return nil
