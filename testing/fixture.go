@@ -23,6 +23,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	jsonpatch "github.com/evanphx/json-patch"
 
@@ -497,6 +498,8 @@ func (t *tracker) addList(obj runtime.Object, replaceExisting bool) error {
 func (t *tracker) Delete(gvr schema.GroupVersionResource, ns, name string) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
+	deleteMaxtime := time.Minute * 5
+	deleteTimer := time.NewTimer(deleteMaxtime)
 
 	objs, ok := t.objects[gvr]
 	if !ok {
@@ -512,6 +515,9 @@ func (t *tracker) Delete(gvr schema.GroupVersionResource, ns, name string) error
 	delete(objs, namespacedName)
 	for _, w := range t.getWatches(gvr, ns) {
 		w.Delete(obj.DeepCopyObject())
+	}
+	if !deleteTimer.Stop() {
+		log.Default().Printf("Delete function took loner than %s to terminate", deleteMaxtime.String())
 	}
 	return nil
 }
