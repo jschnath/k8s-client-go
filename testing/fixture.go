@@ -454,7 +454,6 @@ func (t *tracker) add(gvr schema.GroupVersionResource, obj runtime.Object, ns st
 			for _, w := range t.getWatches(gvr, ns) {
 				// To avoid the object from being accidentally modified by watcher
 				modifyObj := obj.DeepCopyObject()
-				log.Default().Printf("Modifiying object at address %s in tracker", &modifyObj)
 				w.Modify(modifyObj)
 			}
 			t.objects[gvr][namespacedName] = obj
